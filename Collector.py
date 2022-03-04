@@ -1,0 +1,163 @@
+from gen.agCodeParser import agCodeParser
+from gen.agCodeLexer import agCodeLexer
+from gen.agCodeVisitor import agCodeVisitor
+import operator
+
+
+class Collector(agCodeVisitor):
+    ops = {
+        ">": operator.gt,
+        ">=": operator.ge,
+        "==": operator.eq,
+        "<=": operator.le,
+        "<": operator.lt,
+        "+": operator.add,
+        "-": operator.sub,
+        "*": operator.mul,
+        "/": operator.truediv,
+        # "!": operator.not_,
+        # "^": operator.pow
+    }
+
+    def __init__(self, doLog=False):
+        self.memory = {}
+        self.doLog = doLog
+
+    def log(self, prefix, msg):
+        if self.doLog:
+            print(f'{prefix}: {msg}')
+
+    def visitProg(self, ctx: agCodeParser.ProgContext):
+        lines = []
+        numberedLines = []
+        for sctx in ctx.statement():
+            res = self.visit(sctx)
+            if res is not None:
+                lines.extend(res)
+
+        for i, line in enumerate(lines, 1):
+            n = i * 10
+            numberedLines.extend(f'N{n} ' + line + '\n')
+        return ''.join(numberedLines)
+
+    def visitStatement(self, ctx: agCodeParser.StatementContext) -> list:
+        return self.visitChildren(ctx)
+
+    def visitGLine(self, ctx: agCodeParser.GLineContext) -> list:
+        return self.visitChildren(ctx)
+
+    def visitGMove(self, ctx: agCodeParser.GMoveContext) -> list:
+        values = []
+        for ectx in ctx.expr():
+            values.append(self.visit(ectx))
+        line = ctx.G01().getText() + " "
+        for i, value in enumerate(values, 0):
+            line += ctx.ML(i).getText() + f'{value:.2f} '
+        return [line]
+
+    def visitGCirc(self, ctx: agCodeParser.GCircContext):
+        raise Exception("not implemented")
+
+    def visitGWait(self, ctx: agCodeParser.GWaitContext) -> list:
+        waitTime = self.visit(ctx.expr())
+        return [f'G4 T{waitTime}']
+
+    def visitLogic(self, ctx: agCodeParser.LogicContext) -> list:
+        rctx = ctx.repeatStmt()
+        ictx = ctx.ifStmt()
+
+        if rctx is not None:
+            self.log("visit logic", "repeat stat")
+            return self.visit(rctx)
+        self.log("visit logic", "if stat")
+        return self.visit(ictx)
+
+    def visitRepeatStmt(self, ctx: agCodeParser.RepeatStmtContext) -> list:
+        lines = []
+        repeats = int(ctx.expr().getText())
+        for i in range(repeats):
+            for sctx in ctx.statement():
+                subList = self.visit(sctx)
+                if subList is not None:
+                    assert (isinstance(subList, list))
+                    lines.extend(subList)
+        return lines
+
+    def visitIfStmt(self, ctx: agCodeParser.IfStmtContext):
+        truth = self.visit(ctx.condition())
+        if truth:
+            return self.visit(ctx.trueStats())
+        try:
+            return self.visit(ctx.falseStats())
+        except:
+            return None
+
+    def visitTrueStats(self, ctx: agCodeParser.TrueStatsContext) -> list:
+        lines = []
+        for sctx in ctx.statement():
+            res = self.visit(sctx)
+            if res is not None:
+                lines.extend(res)
+        return lines
+
+    def visitFalseStats(self, ctx: agCodeParser.FalseStatsContext) -> list:
+        lines = []
+        for sctx in ctx.statement():
+            res = self.visit(sctx)
+            if res is not None:
+                lines.extend(res)
+        return lines
+
+    def visitCondition(self, ctx: agCodeParser.ConditionContext) -> bool:
+        varName = ctx.ID().getText()
+        try:
+            left = self.memory[varName]
+        except KeyError:
+            raise Exception(f'Variable \'{varName}\' is not defined')
+        right = self.visit(ctx.expr())
+        strOp = ctx.COMPAR().getText()
+        result = Collector.ops[strOp](left, right)
+        self.log("result", result)
+        return result
+
+    def visitVarDecl(self, ctx: agCodeParser.VarDeclContext) -> None:
+        varName = ctx.ID().getText()
+        # value may be None
+        value = self.visit(ctx.expr())
+        self.memory[varName] = value
+
+    def visitAssign(self, ctx: agCodeParser.AssignContext) -> None:
+        varName = ctx.ID().getText()
+        value = self.visit(ctx.expr())
+        self.memory[varName] = value
+
+    def visitVar(self, ctx: agCodeParser.VarContext) -> float:
+        varName = ctx.ID().getText()
+        try:
+            value = self.memory[varName]
+            self.log("Variable accessed", f'{varName} = {value}')
+        except KeyError:
+            raise Exception(f'Variable \'{varName}\' is not defined')
+        assert (isinstance(value, float))
+        return value
+
+    def visitNumber(self, ctx: agCodeParser.NumberContext) -> float:
+        return float(ctx.NUM().getText())
+
+    def visitMul(self, ctx: agCodeParser.MulContext) -> float:
+        strOp = ctx.op.text
+        left = self.visit(ctx.expr(0))
+        right = self.visit(ctx.expr(1))
+        self.log("Mul-left: ", left)
+        self.log("Mul-right: ", right)
+        result = Collector.ops[strOp](left, right)
+        self.log("Mul-result: ", result)
+        return Collector.ops[strOp](left, right)
+
+    def visitAdd(self, ctx: agCodeParser.AddContext) -> float:
+        strOp = ctx.op.text
+        return Collector.ops[strOp](self.visit(ctx.expr(0)), self.visit(ctx.expr(1)))
+
+    def visitUnary(self, ctx: agCodeParser.UnaryContext) -> float:
+        value = self.visit(ctx.expr())
+        return -value
