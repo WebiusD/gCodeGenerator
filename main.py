@@ -4,6 +4,7 @@ from gen.agCodeLexer import agCodeLexer
 from gen.agCodeParser import agCodeParser
 from Collector import Collector
 
+
 def main(argv):
     inputFs = FileStream(argv[1])
     lexer = agCodeLexer(inputFs)
