@@ -12,12 +12,13 @@ def main(argv):
     parser = agCodeParser(stream)
     tree = parser.prog()
 
-    #output = open("DanaStaple.cnc")
-    #output.close()
-
+    output = open("DanaStack.cnc", "w")
     collector = Collector(doLog=False)
-    result = collector.visit(tree)
-    print(result)
+    gCode = collector.visit(tree)
+    print(gCode)
+    output.write(gCode)
+
+    output.close()
 
 
 if __name__ == "__main__":

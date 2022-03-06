@@ -3,7 +3,7 @@ grammar agCode;
 //Parser rules:
 prog        : statement+ EOF;
 
-statement   : (gLine | logic | varDecl | assign) ;
+statement   : (gLine | logic | varDecl | assign | printLn) ;
 
 gLine       : (gMove | gCirc | gWait) ;
 gMove       : G01 (ML expr)? (ML expr)? (ML expr)? (ML MINUS? expr)? (ML expr)? ;
@@ -22,6 +22,8 @@ varDecl     : 'var' ID ('=' expr)? ;
 
 assign      : ID '=' expr ;
 
+printLn     : 'print' '(' TEXT? (',' expr)? ')' ;
+
 expr        : ID                        #var
             | NUM                       #number
             | expr op=('*'|'/') expr    #mul
@@ -37,7 +39,8 @@ G23         : ('G2'|'G3') ;
 CL          : ('J'|'K') ;
 NUM         : [0-9]+ ('.' [0-9]+)? ;
 ID          : [a-z_]+ ;
+TEXT        : '"' .*? '"' ;
 COMPAR      : ('>' | '>=' | '==' | '<=' | '<') ;
 MINUS       : '-' ;
 WHITESPACE  : [ \t\r\n]         -> skip ;
-COMMENT     : '//' .*? '\n'     -> skip ;
+COMMENT     : '#' .*? '\n'     -> skip ;

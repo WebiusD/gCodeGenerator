@@ -123,13 +123,31 @@ class Collector(agCodeVisitor):
     def visitVarDecl(self, ctx: agCodeParser.VarDeclContext) -> None:
         varName = ctx.ID().getText()
         # value may be None
-        value = self.visit(ctx.expr())
+        try:
+            value = self.visit(ctx.expr())
+        except AttributeError:
+            value = None
         self.memory[varName] = value
 
     def visitAssign(self, ctx: agCodeParser.AssignContext) -> None:
         varName = ctx.ID().getText()
         value = self.visit(ctx.expr())
         self.memory[varName] = value
+
+    def visitPrintLn(self, ctx: agCodeParser.PrintLnContext) -> list:
+        line = "( "
+        text = ctx.TEXT().getText()
+        if text is not None:
+            line += text.strip('\"')
+
+        try:
+            expr = self.visit(ctx.expr())
+            line += " " + str(expr)
+        except:
+            pass
+
+        line += " )"
+        return [line]
 
     def visitVar(self, ctx: agCodeParser.VarContext) -> float:
         varName = ctx.ID().getText()
@@ -161,3 +179,6 @@ class Collector(agCodeVisitor):
     def visitUnary(self, ctx: agCodeParser.UnaryContext) -> float:
         value = self.visit(ctx.expr())
         return -value
+
+    def visitParen(self, ctx:agCodeParser.ParenContext):
+        return self.visit(ctx.expr())
