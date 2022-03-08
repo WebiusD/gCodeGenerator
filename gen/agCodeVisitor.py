@@ -1,4 +1,4 @@
-# Generated from C:/Users/schwe/PycharmProjects/gCodeGenerator\agCode.g4 by ANTLR 4.9.2
+# Generated from C:/Users/dennis.schwebius/PycharmProjects/advGcode\agCode.g4 by ANTLR 4.9.2
 from antlr4 import *
 if __name__ is not None and "." in __name__:
     from .agCodeParser import agCodeParser
@@ -94,8 +94,18 @@ class agCodeVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by agCodeParser#not.
+    def visitNot(self, ctx:agCodeParser.NotContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by agCodeParser#paren.
     def visitParen(self, ctx:agCodeParser.ParenContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by agCodeParser#bool.
+    def visitBool(self, ctx:agCodeParser.BoolContext):
         return self.visitChildren(ctx)
 
 
@@ -111,6 +121,11 @@ class agCodeVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by agCodeParser#unary.
     def visitUnary(self, ctx:agCodeParser.UnaryContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by agCodeParser#compar.
+    def visitCompar(self, ctx:agCodeParser.ComparContext):
         return self.visitChildren(ctx)
 
 

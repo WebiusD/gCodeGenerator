@@ -16,20 +16,23 @@ ifStmt      : 'if' condition ':' trueStats ('else' ':' falseStats)? 'end';
 trueStats   : statement+ ;
 falseStats  : statement+ ;
 
-condition   : ID COMPAR expr ;
+condition   : expr ;
 
 varDecl     : 'var' ID ('=' expr)? ;
 
 assign      : ID '=' expr ;
 
-printLn     : 'print' '(' TEXT? (',' expr)? ')' ;
+printLn     : 'print' '(' TEXT? (',' expr)* ')' ;
 
-expr        : ID                        #var
-            | NUM                       #number
-            | expr op=('*'|'/') expr    #mul
-            | expr op=('+'|'-') expr    #add
-            | '-' expr                  #unary
-            | '(' expr ')'              #paren
+expr        : ID                                    #var
+            | NUM                                   #number
+            | BOOL                                  #bool
+            | expr op=('*'|'/') expr                #mul
+            | expr op=('+'|'-') expr                #add
+            | expr op=('>='|'>'|'=='|'<='|'<') expr #compar
+            | '-' expr                              #unary
+            | '!' expr                              #not
+            | '(' expr ')'                          #paren
             ;
 
 //Lexer rules:
@@ -39,6 +42,7 @@ G23         : ('G2'|'G3') ;
 CL          : ('J'|'K') ;
 NUM         : [0-9]+ ('.' [0-9]+)? ;
 ID          : [a-z_]+ ;
+BOOL        : ('True' | 'False') ;
 TEXT        : '"' .*? '"' ;
 COMPAR      : ('>' | '>=' | '==' | '<=' | '<') ;
 MINUS       : '-' ;

@@ -2,7 +2,7 @@ from gen.agCodeParser import agCodeParser
 from gen.agCodeLexer import agCodeLexer
 from gen.agCodeVisitor import agCodeVisitor
 import operator
-
+import re
 
 class Collector(agCodeVisitor):
     ops = {
@@ -18,6 +18,14 @@ class Collector(agCodeVisitor):
         # "!": operator.not_,
         # "^": operator.pow
     }
+
+    @staticmethod
+    def getParts(text) -> (list, str):
+        textParts = text.split('{}')
+        subParts = []
+        for tp in textParts[:-1]:
+            subParts.append(tp + '{}')
+        return subParts, textParts[-1]
 
     def __init__(self, doLog=False):
         self.memory = {}
@@ -37,6 +45,9 @@ class Collector(agCodeVisitor):
 
         for i, line in enumerate(lines, 1):
             n = i * 10
+            if "(" in line:
+                numberedLines.extend(line + '\n')
+                continue
             numberedLines.extend(f'N{n} ' + line + '\n')
         return ''.join(numberedLines)
 
@@ -109,16 +120,9 @@ class Collector(agCodeVisitor):
         return lines
 
     def visitCondition(self, ctx: agCodeParser.ConditionContext) -> bool:
-        varName = ctx.ID().getText()
-        try:
-            left = self.memory[varName]
-        except KeyError:
-            raise Exception(f'Variable \'{varName}\' is not defined')
-        right = self.visit(ctx.expr())
-        strOp = ctx.COMPAR().getText()
-        result = Collector.ops[strOp](left, right)
-        self.log("result", result)
-        return result
+        expr = self.visit(ctx.expr())
+        assert (isinstance(expr, bool))
+        return expr
 
     def visitVarDecl(self, ctx: agCodeParser.VarDeclContext) -> None:
         varName = ctx.ID().getText()
@@ -136,17 +140,24 @@ class Collector(agCodeVisitor):
 
     def visitPrintLn(self, ctx: agCodeParser.PrintLnContext) -> list:
         line = "( "
-        text = ctx.TEXT().getText()
+        text = ctx.TEXT().getText().strip('\"')
         if text is not None:
-            line += text.strip('\"')
+            subParts, endPart = Collector.getParts(text)
+            for i in range(ctx.getChildCount()):
+                if hasattr(ctx.expr(i), 'accept'):
+                    strExpr = str(self.visit(ctx.expr(i)))
+                    try:
+                        line += re.sub(r'{}', strExpr, subParts[0])
+                    except IndexError:
+                        raise Exception("Print statement has less placeholders than arguments!")
+                    del subParts[0]
 
-        try:
-            expr = self.visit(ctx.expr())
-            line += " " + str(expr)
-        except:
-            pass
+            if len(subParts) > 0:
+                raise Exception("Print statement has more placeholders than arguments!")
 
+            line += " " + endPart
         line += " )"
+
         return [line]
 
     def visitVar(self, ctx: agCodeParser.VarContext) -> float:
@@ -156,11 +167,20 @@ class Collector(agCodeVisitor):
             self.log("Variable accessed", f'{varName} = {value}')
         except KeyError:
             raise Exception(f'Variable \'{varName}\' is not defined')
-        assert (isinstance(value, float))
+        assert (isinstance(value, (float, bool)))
         return value
 
     def visitNumber(self, ctx: agCodeParser.NumberContext) -> float:
         return float(ctx.NUM().getText())
+
+    def visitBool(self, ctx:agCodeParser.BoolContext) -> bool:
+        expr = ctx.BOOL().getText()
+        if expr == 'True':
+            return True
+        elif expr == 'False':
+            return False
+        # unreachable:
+        raise Exception(f'Boolean must be \'true\' or \'false\'. Given {expr}')
 
     def visitMul(self, ctx: agCodeParser.MulContext) -> float:
         strOp = ctx.op.text
@@ -176,9 +196,21 @@ class Collector(agCodeVisitor):
         strOp = ctx.op.text
         return Collector.ops[strOp](self.visit(ctx.expr(0)), self.visit(ctx.expr(1)))
 
+    def visitCompar(self, ctx:agCodeParser.ComparContext):
+        left = self.visit(ctx.expr(0))
+        right = self.visit(ctx.expr(1))
+        strOp = ctx.op.text
+        return Collector.ops[strOp](left, right)
+
     def visitUnary(self, ctx: agCodeParser.UnaryContext) -> float:
         value = self.visit(ctx.expr())
+        assert(isinstance(value, float))
         return -value
+
+    def visitNot(self, ctx:agCodeParser.NotContext):
+        value = self.visit(ctx.expr())
+        assert (isinstance(value, bool))
+        return not value
 
     def visitParen(self, ctx:agCodeParser.ParenContext):
         return self.visit(ctx.expr())

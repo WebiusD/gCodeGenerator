@@ -1,4 +1,4 @@
-# Generated from C:/Users/schwe/PycharmProjects/gCodeGenerator\agCode.g4 by ANTLR 4.9.2
+# Generated from C:/Users/dennis.schwebius/PycharmProjects/advGcode\agCode.g4 by ANTLR 4.9.2
 from antlr4 import *
 if __name__ is not None and "." in __name__:
     from .agCodeParser import agCodeParser
@@ -161,12 +161,30 @@ class agCodeListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by agCodeParser#not.
+    def enterNot(self, ctx:agCodeParser.NotContext):
+        pass
+
+    # Exit a parse tree produced by agCodeParser#not.
+    def exitNot(self, ctx:agCodeParser.NotContext):
+        pass
+
+
     # Enter a parse tree produced by agCodeParser#paren.
     def enterParen(self, ctx:agCodeParser.ParenContext):
         pass
 
     # Exit a parse tree produced by agCodeParser#paren.
     def exitParen(self, ctx:agCodeParser.ParenContext):
+        pass
+
+
+    # Enter a parse tree produced by agCodeParser#bool.
+    def enterBool(self, ctx:agCodeParser.BoolContext):
+        pass
+
+    # Exit a parse tree produced by agCodeParser#bool.
+    def exitBool(self, ctx:agCodeParser.BoolContext):
         pass
 
 
@@ -194,6 +212,15 @@ class agCodeListener(ParseTreeListener):
 
     # Exit a parse tree produced by agCodeParser#unary.
     def exitUnary(self, ctx:agCodeParser.UnaryContext):
+        pass
+
+
+    # Enter a parse tree produced by agCodeParser#compar.
+    def enterCompar(self, ctx:agCodeParser.ComparContext):
+        pass
+
+    # Exit a parse tree produced by agCodeParser#compar.
+    def exitCompar(self, ctx:agCodeParser.ComparContext):
         pass
 
 
