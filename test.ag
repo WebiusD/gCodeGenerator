@@ -1,2 +1,24 @@
-var a = 4
-G0 Xa
+var b = True
+var a = 3
+var speed = a
+var air = 10
+
+print("### START ###")
+
+repeat 10:
+    a = a + 0.2
+    G0 X(a) Y200 Z20 H(luft) F1000
+
+    if b:
+        G0 Y100
+        G1 Z0 F(speed)
+    else:
+        G1 X10 Z50
+    end
+
+    air = -air
+    b = !b
+    speed = speed + 10
+end
+
+print("File ended with speed {}", speed)
