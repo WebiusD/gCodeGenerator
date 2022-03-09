@@ -27,7 +27,7 @@ def generate(file):
     
 
 def shell():
-    print("###################### PyGcode REPL######################")
+    print("###################### gCodeGen REPL ######################")
     print("Press CTRL+Z (on windows), CTRL+D (on linux) to evaluate")
     lines = []
     while(True):
